@@ -11,10 +11,147 @@ function imageReady(image) {
     return image.complete && image.naturalWidth > 0;
 }
 
-function playSound(sound) {
+let audioContext = null;
+let ambientNodes = null;
+
+function getAudioContext() {
+    if (!audioContext) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        audioContext = new AudioContextClass();
+    }
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    return audioContext;
+}
+
+function playTone(frequency, duration, options = {}) {
+    const audio = getAudioContext();
+    if (!audio) return;
+
+    const now = audio.currentTime;
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    oscillator.type = options.type || 'sine';
+    oscillator.frequency.setValueAtTime(frequency, now);
+    if (options.endFrequency) {
+        oscillator.frequency.exponentialRampToValueAtTime(options.endFrequency, now + duration);
+    }
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(options.volume || 0.12, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    oscillator.connect(gain);
+    gain.connect(audio.destination);
+    oscillator.start(now);
+    oscillator.stop(now + duration + 0.03);
+}
+
+function playNoise(duration, options = {}) {
+    const audio = getAudioContext();
+    if (!audio) return;
+
+    const bufferSize = Math.max(1, Math.floor(audio.sampleRate * duration));
+    const buffer = audio.createBuffer(1, bufferSize, audio.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+
+    const source = audio.createBufferSource();
+    const filter = audio.createBiquadFilter();
+    const gain = audio.createGain();
+    source.buffer = buffer;
+    filter.type = options.filterType || 'bandpass';
+    filter.frequency.value = options.frequency || 800;
+    filter.Q.value = options.q || 0.8;
+    gain.gain.setValueAtTime(options.volume || 0.08, audio.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(audio.destination);
+    source.start();
+}
+
+function startAmbientSound() {
+    const audio = getAudioContext();
+    if (!audio || ambientNodes) return;
+
+    const master = audio.createGain();
+    master.gain.value = 0.055;
+    master.connect(audio.destination);
+
+    const drone = audio.createOscillator();
+    const droneGain = audio.createGain();
+    drone.type = 'triangle';
+    drone.frequency.value = 92;
+    droneGain.gain.value = 0.16;
+    drone.connect(droneGain);
+    droneGain.connect(master);
+    drone.start();
+
+    const chirpInterval = setInterval(() => {
+        if (!audioContext || gameMode === 'gameOver' || gameMode === 'victory') return;
+        const base = 950 + Math.random() * 700;
+        playTone(base, 0.08, { endFrequency: base * 1.45, type: 'sine', volume: 0.035 });
+        if (Math.random() > 0.55) {
+            setTimeout(() => playTone(base * 0.82, 0.07, { endFrequency: base * 1.18, volume: 0.03 }), 90);
+        }
+    }, 1400);
+
+    const rustleInterval = setInterval(() => {
+        if (!audioContext || gameMode === 'gameOver' || gameMode === 'victory') return;
+        playNoise(0.24, { frequency: 1200 + Math.random() * 900, q: 0.5, volume: 0.025 });
+    }, 2200);
+
+    ambientNodes = { master, drone, chirpInterval, rustleInterval };
+}
+
+function stopAmbientSound() {
+    if (!ambientNodes) return;
+    clearInterval(ambientNodes.chirpInterval);
+    clearInterval(ambientNodes.rustleInterval);
+    ambientNodes.drone.stop();
+    ambientNodes.master.disconnect();
+    ambientNodes = null;
+}
+
+const soundEffects = {
+    jump() {
+        playTone(260, 0.16, { endFrequency: 620, type: 'triangle', volume: 0.14 });
+        playNoise(0.08, { frequency: 1800, volume: 0.025 });
+    },
+    hit() {
+        playNoise(0.22, { frequency: 180, filterType: 'lowpass', q: 1.2, volume: 0.22 });
+        playTone(140, 0.18, { endFrequency: 72, type: 'sawtooth', volume: 0.12 });
+    },
+    bossHit() {
+        playTone(180, 0.1, { endFrequency: 90, type: 'square', volume: 0.12 });
+        playTone(320, 0.08, { endFrequency: 150, type: 'sawtooth', volume: 0.08 });
+    },
+    playerHit() {
+        playNoise(0.16, { frequency: 340, filterType: 'lowpass', volume: 0.18 });
+        playTone(220, 0.2, { endFrequency: 80, type: 'triangle', volume: 0.12 });
+    },
+    shoot() {
+        playTone(520, 0.09, { endFrequency: 740, type: 'square', volume: 0.055 });
+    },
+    victory() {
+        [0, 120, 240, 380].forEach((delay, index) => {
+            setTimeout(() => playTone([392, 523, 659, 784][index], 0.24, { type: 'triangle', volume: 0.12 }), delay);
+        });
+    }
+};
+
+function playSound(soundName) {
+    if (soundEffects[soundName]) {
+        soundEffects[soundName]();
+        return;
+    }
+
     try {
-        sound.currentTime = 0;
-        const result = sound.play();
+        soundName.currentTime = 0;
+        const result = soundName.play();
         if (result && typeof result.catch === 'function') {
             result.catch(() => {
                 // Missing files or browser autoplay rules should not stop gameplay.
@@ -171,7 +308,7 @@ class Player {
     // ?먰봽
     jump() {
         if (!this.isJumping) {
-            playSound(jumpSound); // ?먰봽 ?ъ슫???ъ깮
+            playSound('jump');
             this.velocityY = -12; // ?먰봽 ?믪씠
             this.isJumping = true;
         }
@@ -180,6 +317,7 @@ class Player {
     // --- 異붽?: 怨듦꺽 硫붿냼??---
     shoot() {
         projectiles.push(new Projectile(this.x + this.width, this.y + this.height / 2));
+        playSound('shoot');
     }
 
     // ?낅뜲?댄듃 (以묐젰 ?곸슜 ??
@@ -371,7 +509,7 @@ class Boss {
     // --- 異붽?: ?쇨꺽 硫붿냼??---
     takeDamage(amount) {
         this.hp -= amount;
-        playSound(bossHitSound);
+        playSound('bossHit');
     }
 
     // 蹂댁뒪 怨듦꺽 硫붿냼??
@@ -510,11 +648,11 @@ function endGame(playerWasHit = false) {
     if (gameMode === 'gameOver') return; // 以묐났 ?ㅽ뻾 諛⑹?
     gameMode = 'gameOver';
     cancelAnimationFrame(animationFrameId);
-    backgroundMusic.pause();
+    stopAmbientSound();
     if (playerWasHit) {
-        playSound(playerHitSound);
+        playSound('playerHit');
     } else {
-        playSound(hitSound);
+        playSound('hit');
     }
     document.getElementById('finalScore').innerText = Math.floor(score);
     document.getElementById('gameOverScreen').classList.remove('hidden');
@@ -525,8 +663,8 @@ function winGame() {
     if (gameMode === 'victory') return; // 以묐났 ?ㅽ뻾 諛⑹?
     gameMode = 'victory';
     cancelAnimationFrame(animationFrameId);
-    backgroundMusic.pause();
-    playSound(victoryMusic);
+    stopAmbientSound();
+    playSound('victory');
     document.getElementById('victoryScore').innerText = Math.floor(score);
     document.getElementById('victoryScreen').classList.remove('hidden');
 }
@@ -534,7 +672,7 @@ function winGame() {
 // 7. ?낅젰 泥섎━
 function startGame() {
     if (!isGameStarted) {
-        playSound(backgroundMusic);
+        startAmbientSound();
         isGameStarted = true;
         startHint.classList.add('hidden');
     }
