@@ -7,8 +7,15 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>My Arcade Runner</h1>
-    <canvas id="gameCanvas"></canvas>
+    <main class="game-shell">
+        <h1>My Arcade Runner</h1>
+        <canvas id="gameCanvas"></canvas>
+        <div id="startHint">Tap or press Space to start</div>
+        <div class="mobile-controls" aria-label="Game controls">
+            <button id="jumpButton" type="button">Jump</button>
+            <button id="attackButton" type="button">Attack</button>
+        </div>
+    </main>
     <!-- 추가: 게임 오버 화면 -->
     <div id="gameOverScreen" class="hidden">
         <h2>Game Over</h2>

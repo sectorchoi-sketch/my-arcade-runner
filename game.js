@@ -1,6 +1,9 @@
 // 1. 기본 설정
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const startHint = document.getElementById('startHint');
+const jumpButton = document.getElementById('jumpButton');
+const attackButton = document.getElementById('attackButton');
 
 const assetPath = (fileName) => `assets/${fileName}`;
 
@@ -9,15 +12,29 @@ function imageReady(image) {
 }
 
 function playSound(sound) {
-    sound.currentTime = 0;
-    sound.play().catch(() => {
-        // Missing files or browser autoplay rules should not stop gameplay.
-    });
+    try {
+        sound.currentTime = 0;
+        const result = sound.play();
+        if (result && typeof result.catch === 'function') {
+            result.catch(() => {
+                // Missing files or browser autoplay rules should not stop gameplay.
+            });
+        }
+    } catch (error) {
+        // Some mobile browsers throw synchronously for unsupported or missing audio.
+    }
 }
 
 // 캔버스 크기를 화면에 맞게 조절
-canvas.width = Math.min(window.innerWidth * 0.9, 800);
-canvas.height = Math.min(window.innerHeight * 0.7, 400);
+function resizeCanvas() {
+    const controlsHeight = window.matchMedia('(pointer: coarse)').matches ? 96 : 0;
+    const titleHeight = 96;
+    canvas.width = Math.floor(Math.min(window.innerWidth - 24, 800));
+    canvas.height = Math.floor(Math.min(window.innerHeight - titleHeight - controlsHeight, 400));
+    canvas.height = Math.max(canvas.height, 260);
+}
+
+resizeCanvas();
 
 // --- 추가: 게임 에셋 (이미지, 사운드) ---
 const bananaImage = new Image();
@@ -324,6 +341,15 @@ let animationFrameId; // --- 추가: 게임 루프 제어용 ---
 let lastTime = 0; // --- 추가: 시간 간격 계산용 ---
 let isGameStarted = false; // --- 추가: 게임 시작 여부 확인 ---
 
+function keepPlayerOnGround() {
+    player.y = Math.min(player.y, canvas.height - player.height);
+}
+
+window.addEventListener('resize', () => {
+    resizeCanvas();
+    keepPlayerOnGround();
+});
+
 // 6. 게임 루프
 function animate(timestamp) {
     const deltaTime = timestamp - lastTime; // 프레임 간 시간 간격
@@ -458,15 +484,19 @@ function winGame() {
 }
 
 // 7. 입력 처리
-function handleInput(e) {
-    // --- 추가: 첫 입력 시 배경음악 재생 ---
+function startGame() {
     if (!isGameStarted) {
         playSound(backgroundMusic);
         isGameStarted = true;
+        startHint.classList.add('hidden');
     }
+}
+
+function handleInput(e) {
+    startGame();
 
     // 스페이스바 또는 터치로 점프
-    if (e.code === 'Space' || e.type === 'touchstart') {
+    if (e.code === 'Space' || e.type === 'touchstart' || e.type === 'pointerdown') {
         e.preventDefault(); // 터치 시 화면 스크롤 방지
         player.jump();
     }
@@ -478,7 +508,37 @@ function handleInput(e) {
 }
 
 window.addEventListener('keydown', handleInput);
-window.addEventListener('touchstart', handleInput, { passive: false });
+canvas.addEventListener('pointerdown', handleInput);
+
+jumpButton.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    startGame();
+    player.jump();
+});
+
+attackButton.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    startGame();
+    if (gameMode === 'boss') {
+        player.shoot();
+    }
+});
+
+if (!window.PointerEvent) {
+    canvas.addEventListener('touchstart', handleInput, { passive: false });
+    jumpButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startGame();
+        player.jump();
+    }, { passive: false });
+    attackButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startGame();
+        if (gameMode === 'boss') {
+            player.shoot();
+        }
+    }, { passive: false });
+}
 
 // --- 추가: 재시작 버튼 이벤트 리스너 ---
 document.getElementById('restartButton').addEventListener('click', () => {

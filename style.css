@@ -4,24 +4,67 @@ body {
     background-color: #111;
     color: #eee;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
     font-family: sans-serif;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.game-shell {
+    width: min(100%, 900px);
+    padding: 12px;
+    box-sizing: border-box;
+    text-align: center;
 }
 
 h1 {
-    margin-bottom: 20px;
+    margin: 0 0 12px;
+    font-size: clamp(22px, 5.5vw, 34px);
+    line-height: 1.1;
 }
 
 canvas {
     background-color: #222;
     border: 2px solid #eee;
-    display: block; /* 캔버스 아래 불필요한 여백 제거 */
+    box-sizing: border-box;
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    touch-action: none;
 }
 
-/* 추가: 게임 오버 화면 스타일 */
+#startHint {
+    height: 24px;
+    margin-top: 8px;
+    color: #ffd43b;
+    font-size: 16px;
+}
+
+.mobile-controls {
+    display: none;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.mobile-controls button {
+    min-width: 112px;
+    min-height: 48px;
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 8px;
+    background: #ffd43b;
+    color: #111;
+    cursor: pointer;
+    font-size: 17px;
+    font-weight: 700;
+}
+
 .hidden {
     display: none;
 }
@@ -32,23 +75,43 @@ canvas {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.85);
     color: white;
     padding: 40px;
     border-radius: 10px;
     text-align: center;
     border: 2px solid #eee;
     width: 300px;
+    max-width: calc(100vw - 48px);
+    box-sizing: border-box;
 }
 
 #restartButton,
 #playAgainButton {
     margin-top: 20px;
     padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
     border: none;
     border-radius: 5px;
-    background-color: #4CAF50; /* Green */
+    background-color: #4CAF50;
     color: white;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+@media (max-width: 720px), (pointer: coarse) {
+    body {
+        align-items: flex-start;
+    }
+
+    .game-shell {
+        padding-top: 10px;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    .mobile-controls {
+        display: flex;
+    }
 }
