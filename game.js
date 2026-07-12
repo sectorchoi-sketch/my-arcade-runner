@@ -104,13 +104,20 @@ function startAmbientSound() {
         playNoise(0.24, { frequency: 1200 + Math.random() * 900, q: 0.5, volume: 0.025 });
     }, 2200);
 
-    ambientNodes = { master, drone, chirpInterval, rustleInterval };
+    const beatInterval = setInterval(() => {
+        if (!audioContext || gameMode === 'gameOver' || gameMode === 'victory') return;
+        playNoise(0.08, { frequency: gameMode === 'boss' ? 150 : 95, filterType: 'lowpass', volume: gameMode === 'boss' ? 0.12 : 0.075 });
+        setTimeout(() => playTone(gameMode === 'boss' ? 220 : 180, 0.06, { endFrequency: 120, type: 'triangle', volume: 0.035 }), 180);
+    }, 520);
+
+    ambientNodes = { master, drone, chirpInterval, rustleInterval, beatInterval };
 }
 
 function stopAmbientSound() {
     if (!ambientNodes) return;
     clearInterval(ambientNodes.chirpInterval);
     clearInterval(ambientNodes.rustleInterval);
+    clearInterval(ambientNodes.beatInterval);
     ambientNodes.drone.stop();
     ambientNodes.master.disconnect();
     ambientNodes = null;
@@ -135,6 +142,15 @@ const soundEffects = {
     },
     shoot() {
         playTone(520, 0.09, { endFrequency: 740, type: 'square', volume: 0.055 });
+    },
+    collect() {
+        playTone(740, 0.08, { endFrequency: 980, type: 'triangle', volume: 0.09 });
+        setTimeout(() => playTone(1175, 0.09, { type: 'sine', volume: 0.07 }), 70);
+    },
+    powerup() {
+        [392, 523, 659].forEach((note, index) => {
+            setTimeout(() => playTone(note, 0.15, { endFrequency: note * 1.08, type: 'triangle', volume: 0.09 }), index * 80);
+        });
     },
     victory() {
         [0, 120, 240, 380].forEach((delay, index) => {
@@ -206,6 +222,11 @@ let score = 0;
 let gameMode = 'running'; // 'running', 'boss'
 let boss = null; // 蹂댁뒪 媛앹껜
 const BOSS_SPAWN_SCORE = 500; // 蹂댁뒪 ?깆옣 ?먯닔
+let combo = 0;
+let comboTimer = 0;
+let weaponEnergy = 0;
+let rapidFireTimer = 0;
+let shieldTimer = 0;
 
 function drawJungleBackground() {
     const scroll = isGameStarted ? score * 1.8 : 0;
@@ -289,6 +310,16 @@ class Player {
     draw() {
         // --- ?섏젙: ?ш컖??????대?吏 洹몃━湲?---
         // drawImage(?대?吏, ?뚯뒪x, ?뚯뒪y, ?뚯뒪w, ?뚯뒪h, ?寃웯, ?寃웱, ?寃웮, ?寃웘)
+        if (shieldTimer > 0) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 224, 138, 0.75)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.ellipse(this.drawX + this.width / 2, this.drawY + this.height / 2, this.width * 0.72, this.height * 0.65, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
         if (imageReady(this.image) && this.image.src.endsWith('.svg')) {
             ctx.save();
             ctx.translate(this.drawX + this.width / 2, this.drawY + this.height / 2);
@@ -312,6 +343,11 @@ class Player {
 
     // --- 異붽?: ?쇨꺽 硫붿냼??---
     takeDamage(amount) {
+        if (shieldTimer > 0) {
+            shieldTimer = 0;
+            playSound('powerup');
+            return;
+        }
         if (this.isInvincible) return;
         this.hp -= amount;
         this.isInvincible = true;
@@ -329,6 +365,9 @@ class Player {
 
     // --- 異붽?: 怨듦꺽 硫붿냼??---
     shoot() {
+        const shotCost = rapidFireTimer > 0 ? 4 : 8;
+        if (weaponEnergy < shotCost) return;
+        weaponEnergy = Math.max(0, weaponEnergy - shotCost);
         projectiles.push(new Projectile(this.x + this.width, this.y + this.height / 2));
         playSound('shoot');
     }
@@ -405,6 +444,58 @@ class Obstacle {
     update() { // update 濡쒖쭅? ?숈씪
         this.x -= gameSpeed;
         this.draw();
+    }
+}
+
+class Collectible {
+    constructor(x, y, type = 'banana') {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.width = type === 'power' ? 36 : 28;
+        this.height = type === 'power' ? 36 : 28;
+        this.phase = Math.random() * Math.PI * 2;
+    }
+
+    update(deltaTime) {
+        this.x -= gameSpeed * 0.82;
+        this.phase += deltaTime * 0.006;
+        this.draw();
+    }
+
+    draw() {
+        const bob = Math.sin(this.phase) * 4;
+        const x = this.x;
+        const y = this.y + bob;
+        ctx.save();
+        ctx.translate(x + this.width / 2, y + this.height / 2);
+        if (this.type === 'power') {
+            ctx.rotate(this.phase * 0.6);
+            ctx.fillStyle = '#ffe08a';
+            ctx.beginPath();
+            for (let i = 0; i < 10; i++) {
+                const radius = i % 2 === 0 ? this.width / 2 : this.width / 4;
+                const angle = -Math.PI / 2 + i * Math.PI / 5;
+                ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#fff8dd';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        } else {
+            ctx.rotate(-0.25);
+            ctx.fillStyle = '#ffd43b';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, this.width / 2, this.height / 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#8a5a12';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.fillStyle = '#5c3b14';
+            ctx.fillRect(this.width * 0.22, -3, 5, 9);
+        }
+        ctx.restore();
     }
 }
 
@@ -543,6 +634,9 @@ class Boss {
 const player = new Player(50, canvas.height - 50, 50, 50);
 let projectiles = []; // 諛쒖궗泥?諛곗뿴
 let obstacles = [];
+let collectibles = [];
+let collectibleTimer = 0;
+let powerupTimer = 0;
 let animationFrameId; // --- 異붽?: 寃뚯엫 猷⑦봽 ?쒖뼱??---
 let lastTime = 0; // --- 異붽?: ?쒓컙 媛꾧꺽 怨꾩궛??---
 let isGameStarted = false; // --- 異붽?: 寃뚯엫 ?쒖옉 ?щ? ?뺤씤 ---
@@ -571,6 +665,10 @@ function animate(timestamp) {
         score += deltaTime * 0.01 * (gameSpeed / baseGameSpeed);
         const difficultySpeed = baseGameSpeed + Math.floor(score / 80) * 0.45 + score * 0.0012;
         gameSpeed = Math.min(maxGameSpeed, difficultySpeed);
+        comboTimer = Math.max(0, comboTimer - deltaTime);
+        rapidFireTimer = Math.max(0, rapidFireTimer - deltaTime);
+        shieldTimer = Math.max(0, shieldTimer - deltaTime);
+        if (comboTimer === 0) combo = 0;
     }
     ctx.fillStyle = 'white';
     ctx.font = '20px sans-serif';
@@ -585,7 +683,65 @@ function animate(timestamp) {
     ctx.strokeStyle = 'white';
     ctx.strokeRect(20, 45, 150, 15);
 
+    ctx.fillStyle = '#1b4332';
+    ctx.fillRect(20, 68, 150, 12);
+    ctx.fillStyle = '#ffe08a';
+    ctx.fillRect(20, 68, 150 * Math.min(1, weaponEnergy / 100), 12);
+    ctx.strokeStyle = '#fff8dd';
+    ctx.strokeRect(20, 68, 150, 12);
+    ctx.fillStyle = '#fff8dd';
+    ctx.font = '13px sans-serif';
+    ctx.fillText(`Weapon ${Math.floor(weaponEnergy)}%`, 178, 79);
+    if (combo > 1) {
+        ctx.fillStyle = '#ffe08a';
+        ctx.font = '18px sans-serif';
+        ctx.fillText(`Combo x${combo}`, 20, 104);
+    }
+    if (shieldTimer > 0 || rapidFireTimer > 0) {
+        ctx.fillStyle = '#fff8dd';
+        ctx.font = '14px sans-serif';
+        const powerText = shieldTimer > 0 ? 'Shield!' : 'Rapid fire!';
+        ctx.fillText(powerText, 20, 124);
+    }
+
     player.update(deltaTime);
+
+    if (isGameStarted && gameMode === 'running') {
+        collectibleTimer += deltaTime;
+        powerupTimer += deltaTime;
+        if (collectibleTimer > Math.max(520, 1050 - gameSpeed * 45)) {
+            const lane = Math.random();
+            const itemY = lane < 0.34 ? canvas.height - 92 : lane < 0.68 ? canvas.height - 145 : canvas.height - 205;
+            collectibles.push(new Collectible(canvas.width + 20, Math.max(86, itemY), 'banana'));
+            collectibleTimer = 0;
+        }
+        if (powerupTimer > 7200) {
+            collectibles.push(new Collectible(canvas.width + 40, canvas.height - 165, 'power'));
+            powerupTimer = 0;
+        }
+    }
+
+    collectibles.forEach((item, index) => {
+        item.update(deltaTime);
+        if (isColliding(player, item)) {
+            const comboBonus = Math.min(combo, 5);
+            if (item.type === 'power') {
+                score += 35;
+                weaponEnergy = Math.min(100, weaponEnergy + 45);
+                rapidFireTimer = 4200;
+                shieldTimer = 5000;
+                playSound('powerup');
+            } else {
+                combo += 1;
+                comboTimer = 2200;
+                score += 10 + comboBonus * 3;
+                weaponEnergy = Math.min(100, weaponEnergy + 12);
+                playSound('collect');
+            }
+            collectibles.splice(index, 1);
+        }
+        if (item.x + item.width < 0) collectibles.splice(index, 1);
+    });
 
     // --- ?섏젙: 寃뚯엫 紐⑤뱶???곕Ⅸ 濡쒖쭅 遺꾧린 ---
     if (gameMode === 'running') {
@@ -612,9 +768,16 @@ function animate(timestamp) {
         if (score >= BOSS_SPAWN_SCORE) {
             gameMode = 'boss';
             obstacles = []; // 紐⑤뱺 ?쇰컲 ?μ븷臾??쒓굅
+            collectibles = [];
+            weaponEnergy = Math.max(weaponEnergy, 65);
+            rapidFireTimer = Math.max(rapidFireTimer, 2500);
+            playSound('powerup');
             boss = new Boss(150, 150, bossImage); // 蹂댁뒪 ?앹꽦
         }
     } else if (gameMode === 'boss') {
+        if (isGameStarted) {
+            weaponEnergy = Math.min(100, weaponEnergy + deltaTime * 0.006);
+        }
         // 蹂댁뒪??濡쒖쭅
         if (boss) {
             boss.update(deltaTime);
@@ -633,7 +796,7 @@ function animate(timestamp) {
             // 諛쒖궗泥댁? 蹂댁뒪 異⑸룎 媛먯?
             projectiles.forEach((projectile, projIndex) => {
                 if (isColliding(projectile, boss)) {
-                    boss.takeDamage(10); // 10 ?곕?吏
+                    boss.takeDamage(rapidFireTimer > 0 ? 14 : 10); // 10 ?곕?吏
                     projectiles.splice(projIndex, 1); // 諛쒖궗泥??쒓굅
 
                     if (boss.hp <= 0) {
@@ -725,9 +888,7 @@ jumpButton.addEventListener('pointerdown', (e) => {
 attackButton.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     startGame();
-    if (gameMode === 'boss') {
-        player.shoot();
-    }
+    player.shoot();
 });
 
 if (!window.PointerEvent) {
@@ -740,9 +901,7 @@ if (!window.PointerEvent) {
     attackButton.addEventListener('touchstart', (e) => {
         e.preventDefault();
         startGame();
-        if (gameMode === 'boss') {
-            player.shoot();
-        }
+        player.shoot();
     }, { passive: false });
 }
 
