@@ -277,6 +277,8 @@ function drawJungleBackground() {
 class Player {
     constructor(x, y, width, height) {
         this.x = x;
+        this.startX = x;
+        this.targetX = Math.min(140, Math.max(92, canvas.width * 0.18));
         this.y = y;
         this.width = width;
         this.height = height;
@@ -298,6 +300,7 @@ class Player {
         this.runLean = 0;
         this.drawX = x;
         this.drawY = y;
+        this.legPhase = 0;
 
         this.hp = 100;
         this.maxHp = 100;
@@ -326,6 +329,7 @@ class Player {
             ctx.rotate(this.runLean);
             ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
             ctx.restore();
+            this.drawRunEffects();
             return;
         }
 
@@ -339,6 +343,32 @@ class Player {
         ctx.fillRect(this.x, this.y, this.width, this.height);
         ctx.fillStyle = '#5c3b14';
         ctx.fillRect(this.x + this.width * 0.7, this.y + 6, 8, 10);
+        this.drawRunEffects();
+    }
+
+    drawRunEffects() {
+        if (!isGameStarted) return;
+        const footY = this.drawY + this.height - 3;
+        const centerX = this.drawX + this.width * 0.48;
+        const step = Math.sin(this.legPhase);
+        ctx.save();
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#2d6a4f';
+        ctx.beginPath();
+        ctx.moveTo(centerX - 5, footY - 6);
+        ctx.lineTo(centerX - 18 * step, footY + 12);
+        ctx.moveTo(centerX + 7, footY - 6);
+        ctx.lineTo(centerX + 18 * step, footY + 12);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 224, 138, 0.28)';
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.ellipse(this.drawX - 8 - i * 11, footY + 8 + i, 8 - i, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
     }
 
     // --- 異붽?: ?쇨꺽 硫붿냼??---
@@ -368,17 +398,20 @@ class Player {
         const shotCost = rapidFireTimer > 0 ? 4 : 8;
         if (weaponEnergy < shotCost) return;
         weaponEnergy = Math.max(0, weaponEnergy - shotCost);
-        projectiles.push(new Projectile(this.x + this.width, this.y + this.height / 2));
+        projectiles.push(new Projectile(this.drawX + this.width, this.drawY + this.height / 2));
         playSound('shoot');
     }
 
     // ?낅뜲?댄듃 (以묐젰 ?곸슜 ??
     update(deltaTime) {
         this.runTime += deltaTime * (isGameStarted ? gameSpeed : 1);
+        this.legPhase += deltaTime * (isGameStarted ? 0.034 + gameSpeed * 0.002 : 0);
+        if (isGameStarted && this.x < this.targetX) {
+            this.x = Math.min(this.targetX, this.x + (0.16 * deltaTime));
+        }
         const stride = Math.sin(this.runTime * 0.018);
         const bob = Math.abs(stride) * (this.isJumping ? 1.2 : 4);
-        const pushForward = isGameStarted ? Math.min(34, score * 0.08) : 0;
-        this.drawX = this.x + pushForward + stride * 3;
+        this.drawX = this.x + stride * 4;
         this.drawY = this.y - bob;
         this.runLean = isGameStarted ? stride * 0.08 + 0.08 : 0;
 
@@ -642,6 +675,8 @@ let lastTime = 0; // --- 異붽?: ?쒓컙 媛꾧꺽 怨꾩궛??---
 let isGameStarted = false; // --- 異붽?: 寃뚯엫 ?쒖옉 ?щ? ?뺤씤 ---
 
 function keepPlayerOnGround() {
+    player.targetX = Math.min(140, Math.max(92, canvas.width * 0.18));
+    player.x = Math.min(player.x, player.targetX);
     player.y = Math.min(player.y, canvas.height - player.height);
 }
 
