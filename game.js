@@ -2,24 +2,37 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+const assetPath = (fileName) => `assets/${fileName}`;
+
+function imageReady(image) {
+    return image.complete && image.naturalWidth > 0;
+}
+
+function playSound(sound) {
+    sound.currentTime = 0;
+    sound.play().catch(() => {
+        // Missing files or browser autoplay rules should not stop gameplay.
+    });
+}
+
 // 캔버스 크기를 화면에 맞게 조절
 canvas.width = Math.min(window.innerWidth * 0.9, 800);
 canvas.height = Math.min(window.innerHeight * 0.7, 400);
 
 // --- 추가: 게임 에셋 (이미지, 사운드) ---
 const bananaImage = new Image();
-bananaImage.src = '/my-arcade-runner/assets/banana_run.png'; // 바나나 스프라이트 이미지
-const backgroundMusic = new Audio('/my-arcade-runner/assets/background_music.mp3'); // 배경음악
-const jumpSound = new Audio('/my-arcade-runner/assets/jump.wav'); // 점프 효과음
-const hitSound = new Audio('/my-arcade-runner/assets/hit.wav'); // 충돌 효과음
-const rockImage = new Image(); rockImage.src = '/my-arcade-runner/assets/rock.png'; // 바위 장애물
-const birdImage = new Image(); birdImage.src = '/my-arcade-runner/assets/bird.png'; // 새 장애물
-const bossImage = new Image(); bossImage.src = '/my-arcade-runner/assets/boss.png'; // 보스 이미지
-const peelImage = new Image(); peelImage.src = '/my-arcade-runner/assets/banana_peel.png'; // 바나나 껍질 이미지
-const bossHitSound = new Audio('/my-arcade-runner/assets/boss_hit.wav'); // 보스 피격음
-const victoryMusic = new Audio('/my-arcade-runner/assets/victory.mp3'); // 승리 음악
-const bossProjectileImage = new Image(); bossProjectileImage.src = '/my-arcade-runner/assets/boss_projectile.png'; // 보스 발사체
-const playerHitSound = new Audio('/my-arcade-runner/assets/player_hit.wav'); // 플레이어 피격음
+bananaImage.src = assetPath('banana_run.svg'); // 바나나 스프라이트 이미지
+const backgroundMusic = new Audio(assetPath('background_music.mp3')); // 배경음악
+const jumpSound = new Audio(assetPath('jump.wav')); // 점프 효과음
+const hitSound = new Audio(assetPath('hit.wav')); // 충돌 효과음
+const rockImage = new Image(); rockImage.src = assetPath('rock.svg'); // 바위 장애물
+const birdImage = new Image(); birdImage.src = assetPath('bird.svg'); // 새 장애물
+const bossImage = new Image(); bossImage.src = assetPath('boss.svg'); // 보스 이미지
+const peelImage = new Image(); peelImage.src = assetPath('banana_peel.svg'); // 바나나 껍질 이미지
+const bossHitSound = new Audio(assetPath('boss_hit.wav')); // 보스 피격음
+const victoryMusic = new Audio(assetPath('victory.mp3')); // 승리 음악
+const bossProjectileImage = new Image(); bossProjectileImage.src = assetPath('boss_projectile.svg'); // 보스 발사체
+const playerHitSound = new Audio(assetPath('player_hit.wav')); // 플레이어 피격음
 
 backgroundMusic.loop = true; // 음악 반복 재생
 
@@ -66,8 +79,21 @@ class Player {
     draw() {
         // --- 수정: 사각형 대신 이미지 그리기 ---
         // drawImage(이미지, 소스x, 소스y, 소스w, 소스h, 타겟x, 타겟y, 타겟w, 타겟h)
-        ctx.drawImage(this.image, this.frameX * this.spriteWidth, 0, this.spriteWidth, this.spriteHeight, 
-            this.x, this.y, this.width, this.height);
+        if (imageReady(this.image) && this.image.src.endsWith('.svg')) {
+            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            return;
+        }
+
+        if (imageReady(this.image)) {
+            ctx.drawImage(this.image, this.frameX * this.spriteWidth, 0, this.spriteWidth, this.spriteHeight, 
+                this.x, this.y, this.width, this.height);
+            return;
+        }
+
+        ctx.fillStyle = '#ffd43b';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.fillStyle = '#5c3b14';
+        ctx.fillRect(this.x + this.width * 0.7, this.y + 6, 8, 10);
     }
 
     // --- 추가: 피격 메소드 ---
@@ -81,8 +107,7 @@ class Player {
     // 점프
     jump() {
         if (!this.isJumping) {
-            jumpSound.currentTime = 0; // 사운드를 처음부터 재생
-            jumpSound.play(); // 점프 사운드 재생
+            playSound(jumpSound); // 점프 사운드 재생
             this.velocityY = -12; // 점프 높이
             this.isJumping = true;
         }
@@ -145,7 +170,13 @@ class Obstacle {
     }
 
     draw() {
-        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        if (imageReady(this.image)) {
+            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            return;
+        }
+
+        ctx.fillStyle = this.height < 50 ? '#8ecae6' : '#8d99ae';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 
     update() { // update 로직은 동일
@@ -171,7 +202,13 @@ class Projectile {
     }
 
     draw() {
-        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        if (imageReady(this.image)) {
+            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            return;
+        }
+
+        ctx.fillStyle = '#ffe066';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 }
 
@@ -192,7 +229,13 @@ class BossProjectile {
     }
 
     draw() {
-        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        if (imageReady(this.image)) {
+            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            return;
+        }
+
+        ctx.fillStyle = '#ff6b6b';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 }
 
@@ -216,7 +259,15 @@ class Boss {
 
     draw() {
         // 보스 이미지 그리기
-        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        if (imageReady(this.image)) {
+            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        } else {
+            ctx.fillStyle = '#c1121f';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            ctx.fillStyle = '#fdf0d5';
+            ctx.fillRect(this.x + 25, this.y + 35, 25, 25);
+            ctx.fillRect(this.x + 95, this.y + 35, 25, 25);
+        }
 
         // HP 바 그리기
         ctx.fillStyle = 'red';
@@ -256,8 +307,7 @@ class Boss {
     // --- 추가: 피격 메소드 ---
     takeDamage(amount) {
         this.hp -= amount;
-        bossHitSound.currentTime = 0;
-        bossHitSound.play();
+        playSound(bossHitSound);
     }
 
     // 보스 공격 메소드
@@ -388,10 +438,9 @@ function endGame(playerWasHit = false) {
     cancelAnimationFrame(animationFrameId);
     backgroundMusic.pause();
     if (playerWasHit) {
-        playerHitSound.currentTime = 0;
-        playerHitSound.play();
+        playSound(playerHitSound);
     } else {
-        hitSound.play();
+        playSound(hitSound);
     }
     document.getElementById('finalScore').innerText = Math.floor(score);
     document.getElementById('gameOverScreen').classList.remove('hidden');
@@ -403,7 +452,7 @@ function winGame() {
     gameMode = 'victory';
     cancelAnimationFrame(animationFrameId);
     backgroundMusic.pause();
-    victoryMusic.play();
+    playSound(victoryMusic);
     document.getElementById('victoryScore').innerText = Math.floor(score);
     document.getElementById('victoryScreen').classList.remove('hidden');
 }
@@ -412,7 +461,7 @@ function winGame() {
 function handleInput(e) {
     // --- 추가: 첫 입력 시 배경음악 재생 ---
     if (!isGameStarted) {
-        backgroundMusic.play();
+        playSound(backgroundMusic);
         isGameStarted = true;
     }
 
