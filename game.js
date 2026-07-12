@@ -199,14 +199,16 @@ backgroundMusic.loop = true;
 
 // 2. 寃뚯엫 蹂???뺤쓽
 const gravity = 0.5;
-let gameSpeed = 3;
-const gameSpeedIncrease = 0.0001; // 寃뚯엫 ?띾룄 利앷???
+const baseGameSpeed = 3.4;
+const maxGameSpeed = 9;
+let gameSpeed = baseGameSpeed;
 let score = 0;
 let gameMode = 'running'; // 'running', 'boss'
 let boss = null; // 蹂댁뒪 媛앹껜
 const BOSS_SPAWN_SCORE = 500; // 蹂댁뒪 ?깆옣 ?먯닔
 
 function drawJungleBackground() {
+    const scroll = isGameStarted ? score * 1.8 : 0;
     const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
     sky.addColorStop(0, '#2d6a4f');
     sky.addColorStop(0.58, '#1b4332');
@@ -220,7 +222,8 @@ function drawJungleBackground() {
     ctx.fill();
 
     ctx.fillStyle = 'rgba(9, 43, 28, 0.78)';
-    for (let x = -40; x < canvas.width + 80; x += 96) {
+    const canopyOffset = -(scroll * 0.18) % 96;
+    for (let x = canopyOffset - 96; x < canvas.width + 80; x += 96) {
         ctx.beginPath();
         ctx.ellipse(x + 20, canvas.height - 112, 74, 42, -0.25, 0, Math.PI * 2);
         ctx.ellipse(x + 72, canvas.height - 126, 86, 50, 0.2, 0, Math.PI * 2);
@@ -228,7 +231,8 @@ function drawJungleBackground() {
     }
 
     ctx.fillStyle = 'rgba(6, 31, 21, 0.7)';
-    for (let x = 18; x < canvas.width; x += 142) {
+    const treeOffset = -(scroll * 0.36) % 142;
+    for (let x = treeOffset; x < canvas.width + 142; x += 142) {
         ctx.fillRect(x, canvas.height - 165, 18, 120);
         ctx.beginPath();
         ctx.ellipse(x + 8, canvas.height - 170, 54, 34, 0, 0, Math.PI * 2);
@@ -241,7 +245,8 @@ function drawJungleBackground() {
     ctx.fillRect(0, canvas.height - 48, canvas.width, 16);
 
     ctx.fillStyle = 'rgba(255, 224, 138, 0.16)';
-    for (let x = 34; x < canvas.width; x += 118) {
+    const groundOffset = -(scroll * 0.8) % 118;
+    for (let x = groundOffset; x < canvas.width + 118; x += 118) {
         ctx.fillRect(x, canvas.height - 48, 28, 4);
     }
 }
@@ -268,6 +273,10 @@ class Player {
         this.frameTimer = 0;
         this.fps = 15; // ?좊땲硫붿씠???띾룄
         this.frameInterval = 1000 / this.fps;
+        this.runTime = 0;
+        this.runLean = 0;
+        this.drawX = x;
+        this.drawY = y;
 
         this.hp = 100;
         this.maxHp = 100;
@@ -281,7 +290,11 @@ class Player {
         // --- ?섏젙: ?ш컖??????대?吏 洹몃━湲?---
         // drawImage(?대?吏, ?뚯뒪x, ?뚯뒪y, ?뚯뒪w, ?뚯뒪h, ?寃웯, ?寃웱, ?寃웮, ?寃웘)
         if (imageReady(this.image) && this.image.src.endsWith('.svg')) {
-            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            ctx.save();
+            ctx.translate(this.drawX + this.width / 2, this.drawY + this.height / 2);
+            ctx.rotate(this.runLean);
+            ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
+            ctx.restore();
             return;
         }
 
@@ -322,6 +335,14 @@ class Player {
 
     // ?낅뜲?댄듃 (以묐젰 ?곸슜 ??
     update(deltaTime) {
+        this.runTime += deltaTime * (isGameStarted ? gameSpeed : 1);
+        const stride = Math.sin(this.runTime * 0.018);
+        const bob = Math.abs(stride) * (this.isJumping ? 1.2 : 4);
+        const pushForward = isGameStarted ? Math.min(34, score * 0.08) : 0;
+        this.drawX = this.x + pushForward + stride * 3;
+        this.drawY = this.y - bob;
+        this.runLean = isGameStarted ? stride * 0.08 + 0.08 : 0;
+
         this.y += this.velocityY;
 
         // --- 異붽?: ?щ━湲??좊땲硫붿씠???꾨젅??蹂寃?---
@@ -547,7 +568,9 @@ function animate(timestamp) {
     // --- 異붽?: ?먯닔 怨꾩궛 諛??쒖떆 ---
     // 寃뚯엫???쒖옉?섏뿀???뚮쭔 ?먯닔 利앷?
     if (isGameStarted) {
-        score += deltaTime * 0.01;
+        score += deltaTime * 0.01 * (gameSpeed / baseGameSpeed);
+        const difficultySpeed = baseGameSpeed + Math.floor(score / 80) * 0.45 + score * 0.0012;
+        gameSpeed = Math.min(maxGameSpeed, difficultySpeed);
     }
     ctx.fillStyle = 'white';
     ctx.font = '20px sans-serif';
@@ -566,13 +589,8 @@ function animate(timestamp) {
 
     // --- ?섏젙: 寃뚯엫 紐⑤뱶???곕Ⅸ 濡쒖쭅 遺꾧린 ---
     if (gameMode === 'running') {
-        // --- 異붽?: 寃뚯엫 ?띾룄 ?먯쭊??利앷? ---
-        if (isGameStarted) {
-            gameSpeed += gameSpeedIncrease * deltaTime;
-        }
-
         // ?쇰컲 ?μ븷臾??앹꽦 諛??낅뜲?댄듃
-        const obstacleSpawnInterval = 1500;
+        const obstacleSpawnInterval = Math.max(430, 1200 - gameSpeed * 70);
         if (isGameStarted && (obstacles.length === 0 || obstacles[obstacles.length - 1].x < canvas.width - obstacleSpawnInterval)) {
             if (Math.random() < 0.5) {
                 obstacles.push(new Obstacle(canvas.width, canvas.height - 50, 50, 50, rockImage));
@@ -637,10 +655,12 @@ function animate(timestamp) {
 
 // --- 異붽?: 異⑸룎 媛먯? ?⑥닔 ---
 function isColliding(rect1, rect2) {
-    return rect1.x < rect2.x + rect2.width &&
-           rect1.x + rect1.width > rect2.x &&
-           rect1.y < rect2.y + rect2.height &&
-           rect1.y + rect1.height > rect2.y;
+    const rect1X = rect1.drawX ?? rect1.x;
+    const rect1Y = rect1.drawY ?? rect1.y;
+    return rect1X < rect2.x + rect2.width &&
+           rect1X + rect1.width > rect2.x &&
+           rect1Y < rect2.y + rect2.height &&
+           rect1Y + rect1.height > rect2.y;
 }
 
 // --- 異붽?: 寃뚯엫 ?ㅻ쾭 泥섎━ ?⑥닔 ---
