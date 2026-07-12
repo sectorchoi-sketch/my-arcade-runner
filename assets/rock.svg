@@ -1,6 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <path d="M11 80 22 32 48 14 76 25 91 57 75 88H24z" fill="#8d99ae"/>
-  <path d="M22 32 48 14 58 42 37 52z" fill="#adb5bd"/>
-  <path d="M58 42 76 25 91 57 68 58z" fill="#6c757d"/>
-  <path d="M24 88 37 52 68 58 75 88z" fill="#77808f"/>
+  <defs>
+    <linearGradient id="stone" x1="15" y1="15" x2="85" y2="92" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b7b7a4"/>
+      <stop offset=".55" stop-color="#7f8872"/>
+      <stop offset="1" stop-color="#4f5d4a"/>
+    </linearGradient>
+  </defs>
+  <path d="M9 78 18 34 43 13l32 7 18 33-16 36H22z" fill="url(#stone)"/>
+  <path d="M18 34 43 13l12 31-24 13z" fill="#c9c9b6" opacity=".72"/>
+  <path d="M55 44 75 20l18 33-25 7z" fill="#66735f"/>
+  <path d="M22 89 31 57l37 3 9 29z" fill="#56624f"/>
+  <path d="M20 34c16 3 31 2 45-4M32 64c16 7 31 8 46 3" fill="none" stroke="#3d4a38" stroke-width="4" stroke-linecap="round" opacity=".45"/>
+  <path d="M25 33c9-10 21-15 37-17" fill="none" stroke="#5fa85f" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="66" cy="29" r="5" fill="#4d914d"/>
 </svg>

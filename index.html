@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>My Arcade Runner</title>
+    <title>Jungle Banana Runner</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <main class="game-shell">
-        <h1>My Arcade Runner</h1>
+        <h1>Jungle Banana Runner</h1>
         <canvas id="gameCanvas"></canvas>
-        <div id="startHint">Tap or press Space to start</div>
+        <div id="startHint">Tap or Space to start</div>
         <div class="mobile-controls" aria-label="Game controls">
             <button id="jumpButton" type="button">Jump</button>
             <button id="attackButton" type="button">Attack</button>
@@ -18,13 +18,13 @@
     </main>
     <!-- 추가: 게임 오버 화면 -->
     <div id="gameOverScreen" class="hidden">
-        <h2>Game Over</h2>
+        <h2>Caught in the Jungle</h2>
         <p>Your Score: <span id="finalScore">0</span></p>
         <button id="restartButton">Restart</button>
     </div>
     <!-- 추가: 게임 승리 화면 -->
     <div id="victoryScreen" class="hidden">
-        <h2>You Win!</h2>
+        <h2>You Escaped!</h2>
         <p>Final Score: <span id="victoryScore">0</span></p>
         <button id="playAgainButton">Play Again</button>
     </div>

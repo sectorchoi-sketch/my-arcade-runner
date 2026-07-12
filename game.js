@@ -1,4 +1,4 @@
-// 1. 기본 설정
+﻿// 1. 湲곕낯 ?ㅼ젙
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const startHint = document.getElementById('startHint');
@@ -25,7 +25,7 @@ function playSound(sound) {
     }
 }
 
-// 캔버스 크기를 화면에 맞게 조절
+// 罹붾쾭???ш린瑜??붾㈃??留욊쾶 議곗젅
 function resizeCanvas() {
     const controlsHeight = window.matchMedia('(pointer: coarse)').matches ? 96 : 0;
     const titleHeight = 96;
@@ -36,34 +36,81 @@ function resizeCanvas() {
 
 resizeCanvas();
 
-// --- 추가: 게임 에셋 (이미지, 사운드) ---
+// Game assets.
 const bananaImage = new Image();
-bananaImage.src = assetPath('banana_run.svg'); // 바나나 스프라이트 이미지
-const backgroundMusic = new Audio(assetPath('background_music.mp3')); // 배경음악
-const jumpSound = new Audio(assetPath('jump.wav')); // 점프 효과음
-const hitSound = new Audio(assetPath('hit.wav')); // 충돌 효과음
-const rockImage = new Image(); rockImage.src = assetPath('rock.svg'); // 바위 장애물
-const birdImage = new Image(); birdImage.src = assetPath('bird.svg'); // 새 장애물
-const bossImage = new Image(); bossImage.src = assetPath('boss.svg'); // 보스 이미지
-const peelImage = new Image(); peelImage.src = assetPath('banana_peel.svg'); // 바나나 껍질 이미지
-const bossHitSound = new Audio(assetPath('boss_hit.wav')); // 보스 피격음
-const victoryMusic = new Audio(assetPath('victory.mp3')); // 승리 음악
-const bossProjectileImage = new Image(); bossProjectileImage.src = assetPath('boss_projectile.svg'); // 보스 발사체
-const playerHitSound = new Audio(assetPath('player_hit.wav')); // 플레이어 피격음
+bananaImage.src = assetPath('banana_run.svg');
+const rockImage = new Image();
+rockImage.src = assetPath('rock.svg');
+const birdImage = new Image();
+birdImage.src = assetPath('bird.svg');
+const bossImage = new Image();
+bossImage.src = assetPath('boss.svg');
+const peelImage = new Image();
+peelImage.src = assetPath('banana_peel.svg');
+const bossProjectileImage = new Image();
+bossProjectileImage.src = assetPath('boss_projectile.svg');
 
-backgroundMusic.loop = true; // 음악 반복 재생
+const backgroundMusic = new Audio(assetPath('background_music.mp3'));
+const jumpSound = new Audio(assetPath('jump.wav'));
+const hitSound = new Audio(assetPath('hit.wav'));
+const bossHitSound = new Audio(assetPath('boss_hit.wav'));
+const victoryMusic = new Audio(assetPath('victory.mp3'));
+const playerHitSound = new Audio(assetPath('player_hit.wav'));
+backgroundMusic.loop = true;
 
-// 2. 게임 변수 정의
+// 2. Game variables.
+
+// 2. 寃뚯엫 蹂???뺤쓽
 const gravity = 0.5;
 let gameSpeed = 3;
-const gameSpeedIncrease = 0.0001; // 게임 속도 증가율
+const gameSpeedIncrease = 0.0001; // 寃뚯엫 ?띾룄 利앷???
 let score = 0;
 let gameMode = 'running'; // 'running', 'boss'
-let boss = null; // 보스 객체
-const BOSS_SPAWN_SCORE = 500; // 보스 등장 점수
+let boss = null; // 蹂댁뒪 媛앹껜
+const BOSS_SPAWN_SCORE = 500; // 蹂댁뒪 ?깆옣 ?먯닔
+
+function drawJungleBackground() {
+    const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    sky.addColorStop(0, '#2d6a4f');
+    sky.addColorStop(0.58, '#1b4332');
+    sky.addColorStop(1, '#081c15');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = 'rgba(255, 214, 102, 0.16)';
+    ctx.beginPath();
+    ctx.arc(canvas.width * 0.82, 58, 42, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(9, 43, 28, 0.78)';
+    for (let x = -40; x < canvas.width + 80; x += 96) {
+        ctx.beginPath();
+        ctx.ellipse(x + 20, canvas.height - 112, 74, 42, -0.25, 0, Math.PI * 2);
+        ctx.ellipse(x + 72, canvas.height - 126, 86, 50, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.fillStyle = 'rgba(6, 31, 21, 0.7)';
+    for (let x = 18; x < canvas.width; x += 142) {
+        ctx.fillRect(x, canvas.height - 165, 18, 120);
+        ctx.beginPath();
+        ctx.ellipse(x + 8, canvas.height - 170, 54, 34, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.fillStyle = '#5b3a1e';
+    ctx.fillRect(0, canvas.height - 34, canvas.width, 34);
+    ctx.fillStyle = '#2d6a32';
+    ctx.fillRect(0, canvas.height - 48, canvas.width, 16);
+
+    ctx.fillStyle = 'rgba(255, 224, 138, 0.16)';
+    for (let x = 34; x < canvas.width; x += 118) {
+        ctx.fillRect(x, canvas.height - 48, 28, 4);
+    }
+}
 
 
-// 3. 플레이어 클래스
+// 3. ?뚮젅?댁뼱 ?대옒??
 class Player {
     constructor(x, y, width, height) {
         this.x = x;
@@ -74,28 +121,28 @@ class Player {
         this.velocityY = 0;
         this.isJumping = false;
 
-        // --- 추가: 애니메이션을 위한 설정 ---
+        // --- 異붽?: ?좊땲硫붿씠?섏쓣 ?꾪븳 ?ㅼ젙 ---
         this.image = bananaImage;
-        // banana_run.png 파일에 4개의 프레임이 있다고 가정
-        this.spriteWidth = 250; // 이미지 파일의 총 가로길이 / 프레임 수 (예: 1000 / 4)
-        this.spriteHeight = 250; // 이미지 파일의 세로길이
-        this.frameX = 0; // 현재 보여줄 프레임 인덱스
-        this.maxFrame = 3; // 마지막 프레임 인덱스 (0, 1, 2, 3)
+        // banana_run.png ?뚯씪??4媛쒖쓽 ?꾨젅?꾩씠 ?덈떎怨?媛??
+        this.spriteWidth = 250; // ?대?吏 ?뚯씪??珥?媛濡쒓만??/ ?꾨젅????(?? 1000 / 4)
+        this.spriteHeight = 250; // ?대?吏 ?뚯씪???몃줈湲몄씠
+        this.frameX = 0; // ?꾩옱 蹂댁뿬以??꾨젅???몃뜳??
+        this.maxFrame = 3; // 留덉?留??꾨젅???몃뜳??(0, 1, 2, 3)
         this.frameTimer = 0;
-        this.fps = 15; // 애니메이션 속도
+        this.fps = 15; // ?좊땲硫붿씠???띾룄
         this.frameInterval = 1000 / this.fps;
 
         this.hp = 100;
         this.maxHp = 100;
         this.isInvincible = false;
         this.invincibilityTimer = 0;
-        this.invincibilityDuration = 1500; // 1.5초 무적
+        this.invincibilityDuration = 1500; // 1.5珥?臾댁쟻
     }
 
-    // 그리기
+    // 洹몃━湲?
     draw() {
-        // --- 수정: 사각형 대신 이미지 그리기 ---
-        // drawImage(이미지, 소스x, 소스y, 소스w, 소스h, 타겟x, 타겟y, 타겟w, 타겟h)
+        // --- ?섏젙: ?ш컖??????대?吏 洹몃━湲?---
+        // drawImage(?대?吏, ?뚯뒪x, ?뚯뒪y, ?뚯뒪w, ?뚯뒪h, ?寃웯, ?寃웱, ?寃웮, ?寃웘)
         if (imageReady(this.image) && this.image.src.endsWith('.svg')) {
             ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
             return;
@@ -113,7 +160,7 @@ class Player {
         ctx.fillRect(this.x + this.width * 0.7, this.y + 6, 8, 10);
     }
 
-    // --- 추가: 피격 메소드 ---
+    // --- 異붽?: ?쇨꺽 硫붿냼??---
     takeDamage(amount) {
         if (this.isInvincible) return;
         this.hp -= amount;
@@ -121,26 +168,26 @@ class Player {
         if (this.hp <= 0) endGame(true);
     }
 
-    // 점프
+    // ?먰봽
     jump() {
         if (!this.isJumping) {
-            playSound(jumpSound); // 점프 사운드 재생
-            this.velocityY = -12; // 점프 높이
+            playSound(jumpSound); // ?먰봽 ?ъ슫???ъ깮
+            this.velocityY = -12; // ?먰봽 ?믪씠
             this.isJumping = true;
         }
     }
 
-    // --- 추가: 공격 메소드 ---
+    // --- 異붽?: 怨듦꺽 硫붿냼??---
     shoot() {
         projectiles.push(new Projectile(this.x + this.width, this.y + this.height / 2));
     }
 
-    // 업데이트 (중력 적용 등)
+    // ?낅뜲?댄듃 (以묐젰 ?곸슜 ??
     update(deltaTime) {
         this.y += this.velocityY;
 
-        // --- 추가: 달리기 애니메이션 프레임 변경 ---
-        // 땅에 있을 때만 다리가 움직이도록
+        // --- 異붽?: ?щ━湲??좊땲硫붿씠???꾨젅??蹂寃?---
+        // ?낆뿉 ?덉쓣 ?뚮쭔 ?ㅻ━媛 ?吏곸씠?꾨줉
         if (!this.isJumping) {
             if (this.frameTimer > this.frameInterval) {
                 this.frameX < this.maxFrame ? this.frameX++ : this.frameX = 0;
@@ -150,17 +197,17 @@ class Player {
             }
         }
 
-        // 무적 상태 업데이트 및 깜빡임 효과
+        // 臾댁쟻 ?곹깭 ?낅뜲?댄듃 諛?源쒕묀???④낵
         if (this.isInvincible) {
             this.invincibilityTimer += deltaTime;
-            // 1500ms 동안 100ms 간격으로 깜빡임
+            // 1500ms ?숈븞 100ms 媛꾧꺽?쇰줈 源쒕묀??
             ctx.globalAlpha = (this.invincibilityTimer / 100) % 2 < 1 ? 0.5 : 1;
             if (this.invincibilityTimer > this.invincibilityDuration) {
                 this.isInvincible = false;
                 this.invincibilityTimer = 0;
             }
         }
-        // 바닥에 닿았는지 확인
+        // 諛붾떏???우븯?붿? ?뺤씤
         const groundPosition = canvas.height - this.height;
         if (this.y < groundPosition) {
             this.velocityY += gravity;
@@ -172,11 +219,11 @@ class Player {
         }
         
         this.draw();
-        ctx.globalAlpha = 1.0; // 투명도 초기화
+        ctx.globalAlpha = 1.0; // ?щ챸??珥덇린??
     }
 }
 
-// 4. 장애물 클래스
+// 4. ?μ븷臾??대옒??
 class Obstacle {
     constructor(x, y, width, height, image) {
         this.x = x;
@@ -196,13 +243,13 @@ class Obstacle {
         ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 
-    update() { // update 로직은 동일
+    update() { // update 濡쒖쭅? ?숈씪
         this.x -= gameSpeed;
         this.draw();
     }
 }
 
-// --- 추가: 발사체 클래스 ---
+// --- 異붽?: 諛쒖궗泥??대옒??---
 class Projectile {
     constructor(x, y) {
         this.x = x;
@@ -229,14 +276,14 @@ class Projectile {
     }
 }
 
-// --- 추가: 보스 발사체 클래스 ---
+// --- 異붽?: 蹂댁뒪 諛쒖궗泥??대옒??---
 class BossProjectile {
     constructor(x, y) {
         this.x = x;
         this.y = y;
         this.width = 40;
         this.height = 20;
-        this.speed = -5; // 왼쪽으로 이동
+        this.speed = -5; // ?쇱そ?쇰줈 ?대룞
         this.image = bossProjectileImage;
     }
 
@@ -257,25 +304,25 @@ class BossProjectile {
 }
 
 
-// --- 추가: 보스 클래스 ---
+// --- 異붽?: 蹂댁뒪 ?대옒??---
 class Boss {
     constructor(width, height, image) {
         this.width = width;
         this.height = height;
         this.image = image;
-        this.x = canvas.width; // 화면 오른쪽 밖에서 시작
-        this.y = canvas.height / 2 - this.height / 2; // 화면 중앙 높이
+        this.x = canvas.width; // ?붾㈃ ?ㅻⅨ履?諛뽰뿉???쒖옉
+        this.y = canvas.height / 2 - this.height / 2; // ?붾㈃ 以묒븰 ?믪씠
         this.hp = 100;
         this.maxHp = 100;
-        this.speedX = 1; // 등장 시 수평 이동 속도
-        this.speedY = 2; // 상하 이동 속도
-        this.projectiles = []; // 보스의 발사체 배열
+        this.speedX = 1; // ?깆옣 ???섑룊 ?대룞 ?띾룄
+        this.speedY = 2; // ?곹븯 ?대룞 ?띾룄
+        this.projectiles = []; // 蹂댁뒪??諛쒖궗泥?諛곗뿴
         this.shootTimer = 0;
-        this.shootInterval = 2000; // 2초마다 발사
+        this.shootInterval = 2000; // 2珥덈쭏??諛쒖궗
     }
 
     draw() {
-        // 보스 이미지 그리기
+        // 蹂댁뒪 ?대?吏 洹몃━湲?
         if (imageReady(this.image)) {
             ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
         } else {
@@ -286,7 +333,7 @@ class Boss {
             ctx.fillRect(this.x + 95, this.y + 35, 25, 25);
         }
 
-        // HP 바 그리기
+        // HP 諛?洹몃━湲?
         ctx.fillStyle = 'red';
         ctx.fillRect(this.x, this.y - 20, this.width, 10);
         ctx.fillStyle = 'green';
@@ -294,25 +341,25 @@ class Boss {
     }
 
     update(deltaTime) {
-        // 화면 안으로 일정 위치까지 들어옴
+        // ?붾㈃ ?덉쑝濡??쇱젙 ?꾩튂源뚯? ?ㅼ뼱??
         if (this.x > canvas.width - this.width - 50) {
             this.x -= this.speedX;
         }
 
-        // 위아래로 움직이는 패턴
+        // ?꾩븘?섎줈 ?吏곸씠???⑦꽩
         this.y += this.speedY;
         if (this.y <= 0 || this.y + this.height >= canvas.height) {
-            this.speedY *= -1; // 화면 끝에 닿으면 방향 전환
+            this.speedY *= -1; // ?붾㈃ ?앹뿉 ?우쑝硫?諛⑺뼢 ?꾪솚
         }
 
-        // 보스 공격 패턴
+        // 蹂댁뒪 怨듦꺽 ?⑦꽩
         this.shootTimer += deltaTime;
         if (this.shootTimer > this.shootInterval && this.x <= canvas.width - this.width - 50) {
             this.shoot();
             this.shootTimer = 0;
         }
 
-        // 보스 발사체 업데이트
+        // 蹂댁뒪 諛쒖궗泥??낅뜲?댄듃
         this.projectiles.forEach((projectile, index) => {
             projectile.update();
             if (projectile.x + projectile.width < 0) this.projectiles.splice(index, 1);
@@ -321,25 +368,25 @@ class Boss {
         this.draw();
     }
 
-    // --- 추가: 피격 메소드 ---
+    // --- 異붽?: ?쇨꺽 硫붿냼??---
     takeDamage(amount) {
         this.hp -= amount;
         playSound(bossHitSound);
     }
 
-    // 보스 공격 메소드
+    // 蹂댁뒪 怨듦꺽 硫붿냼??
     shoot() {
         this.projectiles.push(new BossProjectile(this.x, this.y + this.height / 2));
     }
 }
 
-// 5. 게임 객체 생성
+// 5. 寃뚯엫 媛앹껜 ?앹꽦
 const player = new Player(50, canvas.height - 50, 50, 50);
-let projectiles = []; // 발사체 배열
+let projectiles = []; // 諛쒖궗泥?諛곗뿴
 let obstacles = [];
-let animationFrameId; // --- 추가: 게임 루프 제어용 ---
-let lastTime = 0; // --- 추가: 시간 간격 계산용 ---
-let isGameStarted = false; // --- 추가: 게임 시작 여부 확인 ---
+let animationFrameId; // --- 異붽?: 寃뚯엫 猷⑦봽 ?쒖뼱??---
+let lastTime = 0; // --- 異붽?: ?쒓컙 媛꾧꺽 怨꾩궛??---
+let isGameStarted = false; // --- 異붽?: 寃뚯엫 ?쒖옉 ?щ? ?뺤씤 ---
 
 function keepPlayerOnGround() {
     player.y = Math.min(player.y, canvas.height - player.height);
@@ -350,16 +397,17 @@ window.addEventListener('resize', () => {
     keepPlayerOnGround();
 });
 
-// 6. 게임 루프
+// 6. 寃뚯엫 猷⑦봽
 function animate(timestamp) {
-    const deltaTime = timestamp - lastTime; // 프레임 간 시간 간격
+    const deltaTime = timestamp - lastTime; // ?꾨젅??媛??쒓컙 媛꾧꺽
     lastTime = timestamp;
 
     animationFrameId = requestAnimationFrame(animate);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawJungleBackground();
 
-    // --- 추가: 점수 계산 및 표시 ---
-    // 게임이 시작되었을 때만 점수 증가
+    // --- 異붽?: ?먯닔 怨꾩궛 諛??쒖떆 ---
+    // 寃뚯엫???쒖옉?섏뿀???뚮쭔 ?먯닔 利앷?
     if (isGameStarted) {
         score += deltaTime * 0.01;
     }
@@ -368,7 +416,7 @@ function animate(timestamp) {
     ctx.textAlign = 'left';
     ctx.fillText(`Score: ${Math.floor(score)}`, 20, 30);
 
-    // --- 추가: 플레이어 HP 바 표시 ---
+    // --- 異붽?: ?뚮젅?댁뼱 HP 諛??쒖떆 ---
     ctx.fillStyle = '#333';
     ctx.fillRect(20, 45, 150, 15);
     ctx.fillStyle = 'green';
@@ -378,14 +426,14 @@ function animate(timestamp) {
 
     player.update(deltaTime);
 
-    // --- 수정: 게임 모드에 따른 로직 분기 ---
+    // --- ?섏젙: 寃뚯엫 紐⑤뱶???곕Ⅸ 濡쒖쭅 遺꾧린 ---
     if (gameMode === 'running') {
-        // --- 추가: 게임 속도 점진적 증가 ---
+        // --- 異붽?: 寃뚯엫 ?띾룄 ?먯쭊??利앷? ---
         if (isGameStarted) {
             gameSpeed += gameSpeedIncrease * deltaTime;
         }
 
-        // 일반 장애물 생성 및 업데이트
+        // ?쇰컲 ?μ븷臾??앹꽦 諛??낅뜲?댄듃
         const obstacleSpawnInterval = 1500;
         if (isGameStarted && (obstacles.length === 0 || obstacles[obstacles.length - 1].x < canvas.width - obstacleSpawnInterval)) {
             if (Math.random() < 0.5) {
@@ -398,39 +446,39 @@ function animate(timestamp) {
         obstacles.forEach((obstacle, index) => {
             obstacle.update();
             if (isColliding(player, obstacle)) {
-                player.takeDamage(25); // 장애물 충돌 시 25 데미지
-                obstacles.splice(index, 1); // 충돌한 장애물 제거
+                player.takeDamage(25); // ?μ븷臾?異⑸룎 ??25 ?곕?吏
+                obstacles.splice(index, 1); // 異⑸룎???μ븷臾??쒓굅
             }
             if (obstacle.x + obstacle.width < 0) obstacles.splice(index, 1);
         });
 
-        // 보스 등장 조건 확인
+        // 蹂댁뒪 ?깆옣 議곌굔 ?뺤씤
         if (score >= BOSS_SPAWN_SCORE) {
             gameMode = 'boss';
-            obstacles = []; // 모든 일반 장애물 제거
-            boss = new Boss(150, 150, bossImage); // 보스 생성
+            obstacles = []; // 紐⑤뱺 ?쇰컲 ?μ븷臾??쒓굅
+            boss = new Boss(150, 150, bossImage); // 蹂댁뒪 ?앹꽦
         }
     } else if (gameMode === 'boss') {
-        // 보스전 로직
+        // 蹂댁뒪??濡쒖쭅
         if (boss) {
             boss.update(deltaTime);
             if (isColliding(player, boss)) {
-                player.takeDamage(50); // 보스 몸체 충돌 시 50 데미지
+                player.takeDamage(50); // 蹂댁뒪 紐몄껜 異⑸룎 ??50 ?곕?吏
             }
 
-            // 보스 발사체와 플레이어 충돌 감지
+            // 蹂댁뒪 諛쒖궗泥댁? ?뚮젅?댁뼱 異⑸룎 媛먯?
             boss.projectiles.forEach((projectile, index) => {
                 if (isColliding(player, projectile)) {
                     boss.projectiles.splice(index, 1);
-                    player.takeDamage(10); // 보스 발사체 피격 시 10 데미지
+                    player.takeDamage(10); // 蹂댁뒪 諛쒖궗泥??쇨꺽 ??10 ?곕?吏
                 }
             });
 
-            // 발사체와 보스 충돌 감지
+            // 諛쒖궗泥댁? 蹂댁뒪 異⑸룎 媛먯?
             projectiles.forEach((projectile, projIndex) => {
                 if (isColliding(projectile, boss)) {
-                    boss.takeDamage(10); // 10 데미지
-                    projectiles.splice(projIndex, 1); // 발사체 제거
+                    boss.takeDamage(10); // 10 ?곕?吏
+                    projectiles.splice(projIndex, 1); // 諛쒖궗泥??쒓굅
 
                     if (boss.hp <= 0) {
                         winGame();
@@ -440,16 +488,16 @@ function animate(timestamp) {
         }
     }
 
-    // 발사체 업데이트
+    // 諛쒖궗泥??낅뜲?댄듃
     projectiles.forEach((projectile, index) => {
         projectile.update();
         if (projectile.x > canvas.width) {
-            projectiles.splice(index, 1); // 화면 밖으로 나가면 제거
+            projectiles.splice(index, 1); // ?붾㈃ 諛뽰쑝濡??섍?硫??쒓굅
         }
     });
 }
 
-// --- 추가: 충돌 감지 함수 ---
+// --- 異붽?: 異⑸룎 媛먯? ?⑥닔 ---
 function isColliding(rect1, rect2) {
     return rect1.x < rect2.x + rect2.width &&
            rect1.x + rect1.width > rect2.x &&
@@ -457,9 +505,9 @@ function isColliding(rect1, rect2) {
            rect1.y + rect1.height > rect2.y;
 }
 
-// --- 추가: 게임 오버 처리 함수 ---
+// --- 異붽?: 寃뚯엫 ?ㅻ쾭 泥섎━ ?⑥닔 ---
 function endGame(playerWasHit = false) {
-    if (gameMode === 'gameOver') return; // 중복 실행 방지
+    if (gameMode === 'gameOver') return; // 以묐났 ?ㅽ뻾 諛⑹?
     gameMode = 'gameOver';
     cancelAnimationFrame(animationFrameId);
     backgroundMusic.pause();
@@ -472,9 +520,9 @@ function endGame(playerWasHit = false) {
     document.getElementById('gameOverScreen').classList.remove('hidden');
 }
 
-// --- 추가: 게임 승리 처리 함수 ---
+// --- 異붽?: 寃뚯엫 ?밸━ 泥섎━ ?⑥닔 ---
 function winGame() {
-    if (gameMode === 'victory') return; // 중복 실행 방지
+    if (gameMode === 'victory') return; // 以묐났 ?ㅽ뻾 諛⑹?
     gameMode = 'victory';
     cancelAnimationFrame(animationFrameId);
     backgroundMusic.pause();
@@ -483,7 +531,7 @@ function winGame() {
     document.getElementById('victoryScreen').classList.remove('hidden');
 }
 
-// 7. 입력 처리
+// 7. ?낅젰 泥섎━
 function startGame() {
     if (!isGameStarted) {
         playSound(backgroundMusic);
@@ -495,13 +543,13 @@ function startGame() {
 function handleInput(e) {
     startGame();
 
-    // 스페이스바 또는 터치로 점프
+    // ?ㅽ럹?댁뒪諛??먮뒗 ?곗튂濡??먰봽
     if (e.code === 'Space' || e.type === 'touchstart' || e.type === 'pointerdown') {
-        e.preventDefault(); // 터치 시 화면 스크롤 방지
+        e.preventDefault(); // ?곗튂 ???붾㈃ ?ㅽ겕濡?諛⑹?
         player.jump();
     }
 
-    // --- 추가: 'x' 키로 공격 ---
+    // --- 異붽?: 'x' ?ㅻ줈 怨듦꺽 ---
     if (e.code === 'KeyX' && gameMode === 'boss') {
         player.shoot();
     }
@@ -540,7 +588,7 @@ if (!window.PointerEvent) {
     }, { passive: false });
 }
 
-// --- 추가: 재시작 버튼 이벤트 리스너 ---
+// --- 異붽?: ?ъ떆??踰꾪듉 ?대깽??由ъ뒪??---
 document.getElementById('restartButton').addEventListener('click', () => {
     document.location.reload();
 });
@@ -550,5 +598,5 @@ document.getElementById('playAgainButton').addEventListener('click', () => {
 });
 
 
-// 게임 시작
+// 寃뚯엫 ?쒖옉
 animate(0);
