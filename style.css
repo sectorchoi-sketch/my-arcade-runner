@@ -1,0 +1,54 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #111;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: sans-serif;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+canvas {
+    background-color: #222;
+    border: 2px solid #eee;
+    display: block; /* 캔버스 아래 불필요한 여백 제거 */
+}
+
+/* 추가: 게임 오버 화면 스타일 */
+.hidden {
+    display: none;
+}
+
+#gameOverScreen,
+#victoryScreen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 40px;
+    border-radius: 10px;
+    text-align: center;
+    border: 2px solid #eee;
+    width: 300px;
+}
+
+#restartButton,
+#playAgainButton {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #4CAF50; /* Green */
+    color: white;
+}

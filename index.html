@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>My Arcade Runner</title>
+    <link rel="stylesheet" href="/my-arcade-runner/style.css">
+</head>
+<body>
+    <h1>My Arcade Runner</h1>
+    <canvas id="gameCanvas"></canvas>
+    <!-- 추가: 게임 오버 화면 -->
+    <div id="gameOverScreen" class="hidden">
+        <h2>Game Over</h2>
+        <p>Your Score: <span id="finalScore">0</span></p>
+        <button id="restartButton">Restart</button>
+    </div>
+    <!-- 추가: 게임 승리 화면 -->
+    <div id="victoryScreen" class="hidden">
+        <h2>You Win!</h2>
+        <p>Final Score: <span id="victoryScore">0</span></p>
+        <button id="playAgainButton">Play Again</button>
+    </div>
+    <script src="/my-arcade-runner/game.js"></script>
+</body>
+</html>
